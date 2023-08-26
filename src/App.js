@@ -1,45 +1,75 @@
+import { useState } from "react";
 import { Form } from "./components/Form/Form";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 
+const calculateYearlyData = (userInput) => {
+  const yearlyData = [];
+
+  let currentSavings = +userInput["currentSavings"];
+  const yearlyContribution = +userInput["yearlyContribution"];
+  const expectedReturn = +userInput["expectedReturn"] / 100;
+  const duration = +userInput["duration"];
+
+  for (let i = 0; i < duration; i++) {
+    const yearlyInterest = currentSavings * expectedReturn;
+    currentSavings += yearlyInterest + yearlyContribution;
+    yearlyData.push({
+      year: i + 1,
+      yearlyInterest: yearlyInterest,
+      savingsEndOfYear: currentSavings,
+      yearlyContribution: yearlyContribution,
+    });
+  }
+
+  return yearlyData;
+};
+
+const initialFormData = {
+  currentSavings: 10000,
+  yearlyContribution: 1200,
+  expectedReturn: 7,
+  duration: 10,
+};
+
 const App = () => {
-  const calculateHandler = (userInput) => {
-    // Should be triggered when form is submitted
-    // You might not directly want to bind it to the submit event on the form though...
+  const [formData, setFormData] = useState(initialFormData);
+  const [tableData, setTableData] = useState([]);
 
-    const yearlyData = []; // per-year results
+  const calculateHandler = () => {
+    setTableData(calculateYearlyData(formData));
+  };
 
-    let currentSavings = +userInput["current-savings"]; // feel free to change the shape of this input object!
-    const yearlyContribution = +userInput["yearly-contribution"]; // as mentioned: feel free to change the shape...
-    const expectedReturn = +userInput["expected-return"] / 100;
-    const duration = +userInput["duration"];
+  const onFormReset = () => {
+    setFormData(initialFormData);
+  };
 
-    // The below code calculates yearly results (total savings, interest etc)
-    for (let i = 0; i < duration; i++) {
-      const yearlyInterest = currentSavings * expectedReturn;
-      currentSavings += yearlyInterest + yearlyContribution;
-      yearlyData.push({
-        // feel free to change the shape of the data pushed to the array!
-        year: i + 1,
-        yearlyInterest: yearlyInterest,
-        savingsEndOfYear: currentSavings,
-        yearlyContribution: yearlyContribution,
-      });
-    }
-
-    // do something with yearlyData ...
+  const onFormUpdate = (field, value) => {
+    setFormData((current) => ({
+      ...current,
+      [field]: +value,
+    }));
   };
 
   return (
     <div>
       <Header />
 
-      <Form />
+      <Form
+        formData={formData}
+        onFormUpdate={onFormUpdate}
+        onFormReset={onFormReset}
+        onCalculate={calculateHandler}
+      />
 
-      {/* Todo: Show below table conditionally (only once result data is available) */}
-      {/* Show fallback text if no data is available */}
-
-      <Table />
+      {tableData.length > 0 ? (
+        <Table
+          tableData={tableData}
+          initialInvestment={formData.currentSavings}
+        />
+      ) : (
+        <p style={{ textAlign: "center" }}>No investment calculated yet.</p>
+      )}
     </div>
   );
 };
